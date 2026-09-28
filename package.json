@@ -1,0 +1,13 @@
+{
+  "name": "tcva-awards-2026-live-checkin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Connected Supabase and Vercel version of the TCVA Awards 2026 check-in app.",
+  "scripts": {
+    "db:apply": "NODE_PATH=node_modules node supabase/apply-schema.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {}
+}
