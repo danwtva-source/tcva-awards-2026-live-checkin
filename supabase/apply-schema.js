@@ -3,11 +3,7 @@ const path = require("path");
 const { Client } = require("pg");
 
 const projectId = "yteynpbwnmywoqfgrrxj";
-const migrationPath = path.join(
-  __dirname,
-  "migrations",
-  "001_tcva_awards_live_schema.sql"
-);
+const migrationsDir = path.join(__dirname, "migrations");
 
 async function main() {
   const password = process.env.SUPABASE_DB_PASSWORD;
@@ -16,7 +12,15 @@ async function main() {
     throw new Error("SUPABASE_DB_PASSWORD is required.");
   }
 
-  const sql = fs.readFileSync(migrationPath, "utf8");
+  const migrationFiles = fs
+    .readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+
+  if (migrationFiles.length === 0) {
+    throw new Error("No SQL migration files found.");
+  }
+
   const client = new Client({
     host: `db.${projectId}.supabase.co`,
     port: 5432,
@@ -27,7 +31,12 @@ async function main() {
   });
 
   await client.connect();
-  await client.query(sql);
+
+  for (const file of migrationFiles) {
+    const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+    await client.query(sql);
+    console.log(`Applied ${file}`);
+  }
 
   const tables = await client.query(`
     select table_name
