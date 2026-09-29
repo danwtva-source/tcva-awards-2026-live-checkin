@@ -8,3 +8,7 @@ dist
 coverage
 *.log
 .DS_Store
+outputs
+supabase/imports/*.sql
+supabase/imports/*.json
+supabase/imports/*.md
