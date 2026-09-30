@@ -104,6 +104,12 @@ function isMissingRpc(error) {
   return error?.code === "PGRST202" || /could not find.*function|function .* does not exist|schema cache/i.test(error?.message || "");
 }
 
+function staffDisplayName(profile) {
+  const fullName = profile?.full_name?.trim();
+  if (fullName && !fullName.includes("@")) return fullName;
+  return profile?.email || fullName || "Staff user";
+}
+
 export default function CheckInApp() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -675,6 +681,13 @@ export default function CheckInApp() {
           </div>
         </div>
         <div className="top-actions">
+          <div className="active-user" title={profile.email || "Signed-in staff account"}>
+            <ShieldCheck size={19} />
+            <div>
+              <span>Signed in as</span>
+              <strong>{staffDisplayName(profile)}</strong>
+            </div>
+          </div>
           <label className="device-label">
             Device
             <input
@@ -965,40 +978,107 @@ function StaffAccess({ staffAccounts, updateStaffAccount, saveStaffAccount, staf
 
 function Dashboard({ data }) {
   const dashboard = data.dashboard || {};
+  const expected = Number(dashboard.total_expected || 0);
+  const arrived = Number(dashboard.total_arrived || 0);
+  const outstanding = Number(dashboard.outstanding || 0);
+  const attendancePercent = Math.max(0, Math.min(100, Number(dashboard.attendance_percent || 0)));
+  const tableRows = [...data.tableSummary]
+    .map((row) => {
+      const assigned = Number(row.assigned || 0);
+      const tableArrived = Number(row.arrived || 0);
+      return {
+        ...row,
+        assigned,
+        arrived: tableArrived,
+        attendancePercent: assigned ? Math.round((tableArrived / assigned) * 100) : 0,
+      };
+    })
+    .filter((row) => row.assigned > 0)
+    .sort((a, b) => Number(a.table_number || 999) - Number(b.table_number || 999));
+  const tablesStarted = tableRows.filter((row) => row.arrived > 0).length;
+  const completeTables = tableRows.filter((row) => row.assigned > 0 && row.arrived >= row.assigned).length;
+  const dietaryFlags = tableRows.reduce((total, row) => total + Number(row.dietary_flags || 0), 0);
+  const accessibilityFlags = tableRows.reduce((total, row) => total + Number(row.accessibility_flags || 0), 0);
+
   return (
     <div className="ops-panel">
       <div className="metric-grid">
-        <Metric label="Expected" value={dashboard.total_expected || 0} />
-        <Metric label="Arrived" value={dashboard.total_arrived || 0} />
-        <Metric label="Outstanding" value={dashboard.outstanding || 0} />
-        <Metric label="Attendance" value={`${dashboard.attendance_percent || 0}%`} />
+        <Metric label="Expected" value={expected} />
+        <Metric label="Arrived" value={arrived} />
+        <Metric label="Outstanding" value={outstanding} />
+        <Metric label="Attendance" value={`${attendancePercent}%`} />
       </div>
-      <div className="two-column">
-        <section>
-          <h2>Category Attendance</h2>
-          <DataTable
-            rows={data.categories}
-            columns={[
-              ["Category", (row) => finalistSafeLabel(row.award_category)],
-              ["Expected", (row) => row.expected],
-              ["Arrived", (row) => row.arrived],
-              ["Outstanding", (row) => row.outstanding],
-              ["%", (row) => row.attendance_percent ?? ""],
-            ]}
-          />
+      <div className="dashboard-visuals">
+        <section className="visual-card arrival-overview">
+          <div className="visual-card-heading">
+            <div>
+              <p className="eyebrow">Live overview</p>
+              <h2>Overall arrival progress</h2>
+            </div>
+            <span className="live-indicator">Live</span>
+          </div>
+          <div className="arrival-chart-row">
+            <div
+              className="progress-ring"
+              style={{ "--progress": `${attendancePercent}%` }}
+              role="img"
+              aria-label={`${attendancePercent}% attendance: ${arrived} of ${expected} guests arrived`}
+            >
+              <div className="progress-ring-centre">
+                <strong>{attendancePercent}%</strong>
+                <span>arrived</span>
+              </div>
+            </div>
+            <div className="arrival-breakdown">
+              <div>
+                <span className="chart-key arrived-key" />
+                <p><strong>{arrived}</strong> arrived</p>
+              </div>
+              <div>
+                <span className="chart-key outstanding-key" />
+                <p><strong>{outstanding}</strong> outstanding</p>
+              </div>
+              <div className="attendance-track" aria-hidden="true">
+                <span style={{ width: `${attendancePercent}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="desk-stat-grid">
+            <VisualStat label="Tables started" value={`${tablesStarted}/${tableRows.length}`} />
+            <VisualStat label="Dietary notes" value={dietaryFlags} />
+            <VisualStat label="Accessibility notes" value={accessibilityFlags} />
+          </div>
         </section>
-        <section>
-          <h2>Table Attendance</h2>
-          <DataTable
-            rows={[...data.tableSummary].sort((a, b) => Number(a.table_number || 999) - Number(b.table_number || 999))}
-            columns={[
-              ["Table", (row) => row.table_number],
-              ["Assigned", (row) => row.assigned],
-              ["Arrived", (row) => row.arrived],
-              ["Dietary", (row) => row.dietary_flags],
-              ["Access", (row) => row.accessibility_flags],
-            ]}
-          />
+
+        <section className="visual-card table-progress-panel">
+          <div className="visual-card-heading">
+            <div>
+              <p className="eyebrow">Sign-in desk</p>
+              <h2>Arrivals by table</h2>
+            </div>
+            <span className="completion-summary">{completeTables} complete</span>
+          </div>
+          <div className="table-progress-grid">
+            {tableRows.map((row) => (
+              <div className={`table-progress-item ${row.attendancePercent === 100 ? "complete" : ""}`} key={row.id || row.table_number}>
+                <div className="table-progress-label">
+                  <strong>{row.table_number === "TBC" ? "TBC" : `Table ${row.table_number}`}</strong>
+                  <span>{row.arrived} of {row.assigned}</span>
+                </div>
+                <div
+                  className="table-progress-track"
+                  role="progressbar"
+                  aria-label={`Table ${row.table_number}: ${row.arrived} of ${row.assigned} guests arrived`}
+                  aria-valuemin="0"
+                  aria-valuemax={row.assigned}
+                  aria-valuenow={row.arrived}
+                >
+                  <span style={{ width: `${row.attendancePercent}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          {!tableRows.length && <EmptyState title="No table data yet" text="Table progress will appear as guests are assigned." />}
         </section>
       </div>
     </div>
@@ -1010,6 +1090,15 @@ function Metric({ label, value }) {
     <div className="metric-card">
       <span>{label}</span>
       <strong>{value}</strong>
+    </div>
+  );
+}
+
+function VisualStat({ label, value }) {
+  return (
+    <div className="visual-stat">
+      <strong>{value}</strong>
+      <span>{label}</span>
     </div>
   );
 }
