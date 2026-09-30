@@ -1,6 +1,5 @@
--- TCVA Awards 2026 finalist-safe labels
--- Normalises winner- and runner-up-related import labels so nominees and guests
--- only see finalist-safe wording in the app and exports.
+-- TCVA Awards 2026 runner-up finalist-safe labels
+-- Ensures any runner-up status is hidden from guest-facing app views/exports.
 
 begin;
 

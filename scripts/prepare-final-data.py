@@ -43,6 +43,9 @@ def finalist_safe_label(value: Any) -> str:
         return ""
     text = re.sub(r"winners?,?\s*runner\s*ups?\s*&\s*nominees?", "Finalists", text, flags=re.I)
     text = re.sub(r"winners?,?\s*runner\s*ups?\s*(and|&)\s*nominees?", "Finalists", text, flags=re.I)
+    text = re.sub(r"\brunners[\s-]+ups?\b", "Finalists", text, flags=re.I)
+    text = re.sub(r"\brunner[\s-]+ups\b", "Finalists", text, flags=re.I)
+    text = re.sub(r"\brunner[\s-]+up\b", "Finalist", text, flags=re.I)
     text = re.sub(r"\bwinner\b", "Finalist", text, flags=re.I)
     text = re.sub(r"\bwinners\b", "Finalists", text, flags=re.I)
     text = re.sub(r"\bfinalist\b", "Finalist", text, flags=re.I)
