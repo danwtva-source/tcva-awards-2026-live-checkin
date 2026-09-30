@@ -39,6 +39,8 @@ Run the migrations in filename order:
 1. `supabase/migrations/001_tcva_awards_live_schema.sql`
 2. `supabase/migrations/002_editable_seating_and_guest_admin.sql`
 3. `supabase/migrations/003_complete_realtime_publication.sql`
+4. Continue with each later numbered migration in order, including
+   `007_staff_account_activation.sql` for staff-account provisioning and access management.
 
 Alternative developer route:
 
@@ -97,4 +99,4 @@ The final Version 2 PRD is in `docs/TCVA_Awards_2026_Version_2_PRD.md`.
 
 ## Deployment Notes
 
-Deploy the Next.js app to Vercel and set the public Supabase URL and anon key in Vercel environment variables. Create the first app user, claim first admin access, then use Supabase or the app to activate any additional staff accounts.
+Deploy the Next.js app to Vercel and set the public Supabase URL and anon key in Vercel environment variables. Create the first app user and claim first admin access. Create later users in Supabase Authentication; the app administrator can then activate them and assign their role from **Operations → Staff access**. Public account creation is not offered by the production app.
