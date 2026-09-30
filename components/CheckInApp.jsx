@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { downloadCsv } from "@/lib/csv";
-import { confirmationLabel, formatDateTime, normaliseText, statusLabel, tableLabel } from "@/lib/format";
+import { confirmationLabel, finalistSafeLabel, formatDateTime, normaliseText, statusLabel, tableLabel } from "@/lib/format";
 import { hasSupabaseConfig, supabase } from "@/lib/supabaseClient";
 
 const PROGRAMME_URL =
@@ -55,6 +55,38 @@ function sortByTable(a, b) {
 
 function StatusPill({ status }) {
   return <span className={`pill pill-${status}`}>{statusLabel(status)}</span>;
+}
+
+function sanitiseParty(party) {
+  if (!party) return party;
+  return {
+    ...party,
+    party_code: finalistSafeLabel(party.party_code),
+    party_name: finalistSafeLabel(party.party_name),
+    lead_guest_name: finalistSafeLabel(party.lead_guest_name),
+    organisation_name: finalistSafeLabel(party.organisation_name),
+  };
+}
+
+function sanitiseGuest(guest) {
+  return {
+    ...guest,
+    source_sheet: finalistSafeLabel(guest.source_sheet),
+    role_label: finalistSafeLabel(guest.role_label),
+    relationship_label: finalistSafeLabel(guest.relationship_label),
+    award_category: finalistSafeLabel(guest.award_category),
+    sponsor_name: finalistSafeLabel(guest.sponsor_name),
+    linked_notes: finalistSafeLabel(guest.linked_notes),
+    admin_notes: finalistSafeLabel(guest.admin_notes),
+    guest_parties: sanitiseParty(guest.guest_parties),
+  };
+}
+
+function sanitiseCategory(row) {
+  return {
+    ...row,
+    award_category: finalistSafeLabel(row.award_category),
+  };
 }
 
 function EmptyState({ title, text }) {
@@ -223,21 +255,24 @@ export default function CheckInApp() {
       return;
     }
 
+    const guests = (guestsResult.data || []).map(sanitiseGuest);
+    const parties = (partiesResult.data || []).map(sanitiseParty);
+    const categories = (categoriesResult.data || []).map(sanitiseCategory);
     const programme = assetsResult.data?.find((asset) => asset.asset_key === "programme_pdf");
     const feedback = feedbackResult.data?.find((link) => link.active);
 
     setAssetUrl(programme?.url || PROGRAMME_URL);
     setFeedbackUrl(feedback?.url || "");
     setData({
-      guests: guestsResult.data || [],
+      guests,
       tables: tablesResult.data || [],
-      parties: partiesResult.data || [],
+      parties,
       assets: assetsResult.data || [],
       feedbackLinks: feedbackResult.data || [],
       attendanceEvents: eventsResult.data || [],
       auditLog: auditResult.data || [],
       dashboard: dashboardResult.data || null,
-      categories: categoriesResult.data || [],
+      categories,
       tableSummary: tableSummaryResult.data || [],
     });
 
@@ -515,9 +550,12 @@ export default function CheckInApp() {
   return (
     <main className={`app-shell ${viewMode}`}>
       <header className="top-bar">
-        <div>
-          <p className="eyebrow">TCVA Awards 2026</p>
-          <h1>Live Check-In</h1>
+        <div className="brand-lockup">
+          <img src="/tcva-logo-mark.svg" alt="" className="top-brand-mark" />
+          <div>
+            <p className="eyebrow">TCVA Awards 2026</p>
+            <h1>Live Check-In</h1>
+          </div>
         </div>
         <div className="top-actions">
           <label className="device-label">
@@ -638,14 +676,14 @@ function TabletMode({
               <div>
                 <p className="eyebrow">{tableLabel(selectedGuest)}</p>
                 <h2>{selectedGuest.full_name}</h2>
-                <p>{selectedGuest.organisation_name || selectedGuest.award_category || selectedGuest.role_label || "Guest"}</p>
+                <p>{selectedGuest.organisation_name || finalistSafeLabel(selectedGuest.award_category) || finalistSafeLabel(selectedGuest.role_label) || "Guest"}</p>
               </div>
               <StatusPill status={selectedGuest.attendance_status} />
             </div>
 
             <div className="info-grid">
-              <InfoCard label="Role" value={selectedGuest.role_label || selectedGuest.relationship_label} />
-              <InfoCard label="Category" value={selectedGuest.award_category} />
+              <InfoCard label="Role" value={finalistSafeLabel(selectedGuest.role_label || selectedGuest.relationship_label)} />
+              <InfoCard label="Category" value={finalistSafeLabel(selectedGuest.award_category)} />
               <InfoCard label="Dietary" value={selectedGuest.dietary_notes} warn />
               <InfoCard label="Accessibility" value={selectedGuest.accessibility_notes} warn />
               <InfoCard label="Notes" value={selectedGuest.linked_notes || selectedGuest.admin_notes} />
@@ -740,7 +778,7 @@ function Dashboard({ data }) {
           <DataTable
             rows={data.categories}
             columns={[
-              ["Category", (row) => row.award_category],
+              ["Category", (row) => finalistSafeLabel(row.award_category)],
               ["Expected", (row) => row.expected],
               ["Arrived", (row) => row.arrived],
               ["Outstanding", (row) => row.outstanding],
@@ -791,7 +829,7 @@ function GuestManagement({ guests, query, setQuery, setEditGuest }) {
           ["Table", (row) => tableLabel(row)],
           ["Status", (row) => statusLabel(row.attendance_status)],
           ["Confirmation", (row) => confirmationLabel(row.confirmation_status)],
-          ["Organisation", (row) => row.organisation_name],
+          ["Organisation", (row) => finalistSafeLabel(row.organisation_name)],
           ["Dietary", (row) => row.dietary_notes],
           ["Edit", (row) => (
             <button className="small-btn" onClick={() => setEditGuest({ ...row })}>
@@ -843,7 +881,7 @@ function Exports({ data }) {
     { label: "Attendance", get: (row) => row.attendance_status },
     { label: "Confirmation", get: (row) => row.confirmation_status },
     { label: "Organisation", get: (row) => row.organisation_name },
-    { label: "Category", get: (row) => row.award_category },
+    { label: "Category", get: (row) => finalistSafeLabel(row.award_category) },
     { label: "Dietary", get: (row) => row.dietary_notes },
     { label: "Accessibility", get: (row) => row.accessibility_notes },
     { label: "Phone", get: (row) => row.phone },

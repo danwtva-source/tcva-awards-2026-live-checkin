@@ -37,6 +37,19 @@ def clean(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value)).strip()
 
 
+def finalist_safe_label(value: Any) -> str:
+    text = clean(value)
+    if not text:
+        return ""
+    text = re.sub(r"winners?,?\s*runner\s*ups?\s*&\s*nominees?", "Finalists", text, flags=re.I)
+    text = re.sub(r"winners?,?\s*runner\s*ups?\s*(and|&)\s*nominees?", "Finalists", text, flags=re.I)
+    text = re.sub(r"\bwinner\b", "Finalist", text, flags=re.I)
+    text = re.sub(r"\bwinners\b", "Finalists", text, flags=re.I)
+    text = re.sub(r"\bfinalist\b", "Finalist", text, flags=re.I)
+    text = re.sub(r"\bfinalists\b", "Finalists", text, flags=re.I)
+    return text
+
+
 def norm_name(value: str) -> str:
     value = clean(value).lower()
     value = value.replace("ll ", "")
@@ -243,38 +256,38 @@ def source_candidates(wb) -> list[Candidate]:
         dietary = clean(ws.cell(row, 13).value)
         accessibility = clean(ws.cell(row, 14).value)
         table = parse_table_number(ws.cell(row, 15).value)
-        party_key = f"winners:{row}:{invite or primary}"
+        party_key = f"finalists:{row}:{invite or primary}"
         note = "; ".join(part for part in [comments, address] if part)
         add_candidate(
             party_key=party_key,
-            source_sheet=ws.title,
+            source_sheet="Finalists",
             source_row=row,
             invite_number=invite,
             full_name=primary,
-            role_label=relationship,
-            relationship_label=relationship,
-            award_category=current_category,
+            role_label=finalist_safe_label(relationship),
+            relationship_label=finalist_safe_label(relationship),
+            award_category=finalist_safe_label(current_category),
             phone=phone,
             dietary_notes="" if dietary.lower() in {"no", "none", "na", "n/a"} else dietary,
             accessibility_notes="" if accessibility.lower() in {"no", "none", "na", "n/a"} else accessibility,
-            linked_notes=note,
+            linked_notes=finalist_safe_label(note),
             table_number=table,
             confirmation_status=attending,
         )
         for index, (guest_name, guest_note) in enumerate(split_people(guest_cell), start=1):
             add_candidate(
                 party_key=party_key,
-                source_sheet=ws.title,
+                source_sheet="Finalists",
                 source_row=row,
                 invite_number=invite,
                 full_name=guest_name,
                 role_label="Linked guest",
                 relationship_label="Guest",
-                award_category=current_category,
+                award_category=finalist_safe_label(current_category),
                 phone=phone,
                 dietary_notes=guest_note,
                 accessibility_notes="",
-                linked_notes=f"Linked to {primary}".strip(),
+                linked_notes=finalist_safe_label(f"Linked to {primary}".strip()),
                 table_number=table,
                 confirmation_status=attending,
             )
