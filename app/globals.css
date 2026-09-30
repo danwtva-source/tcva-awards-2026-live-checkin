@@ -262,6 +262,15 @@ input::placeholder {
   padding: 5px 9px;
 }
 
+.danger-btn {
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+}
+
+.danger-btn:hover {
+  background: rgba(127, 29, 29, 0.28);
+}
+
 .text-btn {
   border: 0;
   background: transparent;
@@ -612,6 +621,13 @@ th {
   padding: 14px;
 }
 
+.table-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .table-card h2,
 .table-card p {
   margin: 0 0 8px;
@@ -634,6 +650,13 @@ th {
 .table-guest strong,
 .table-guest span {
   display: block;
+}
+
+.table-guest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .export-panel {

@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   TabletSmartphone,
+  Trash2,
   Undo2,
   Users,
 } from "lucide-react";
@@ -97,6 +98,10 @@ function EmptyState({ title, text }) {
       <p>{text}</p>
     </div>
   );
+}
+
+function isMissingRpc(error) {
+  return error?.code === "PGRST202" || /could not find.*function|function .* does not exist|schema cache/i.test(error?.message || "");
 }
 
 export default function CheckInApp() {
@@ -398,6 +403,74 @@ export default function CheckInApp() {
     setBusyId(null);
   }
 
+  async function deleteGuest(guest) {
+    if (!guest?.id) return;
+    const confirmed = window.confirm(`Delete ${guest.full_name}? This will permanently remove this guest and any check-in history linked to them.`);
+    if (!confirmed) return;
+
+    setBusyId(guest.id);
+    setError("");
+    setMessage("");
+    const { error: rpcError } = await supabase.rpc("delete_guest", {
+      p_guest_id: guest.id,
+      p_reason: "Deleted in Operations Mode",
+      p_device_id: deviceId,
+      p_device_label: deviceLabel,
+    });
+    let deleteError = rpcError;
+
+    if (isMissingRpc(rpcError)) {
+      const { error: fallbackError } = await supabase.from("guests").delete().eq("id", guest.id);
+      deleteError = fallbackError;
+    }
+
+    if (deleteError) {
+      setError(deleteError.message);
+    } else {
+      if (selectedGuestId === guest.id) setSelectedGuestId(null);
+      setEditGuest(null);
+      setMessage(`${guest.full_name} deleted.`);
+      await loadAllData(false);
+    }
+    setBusyId(null);
+  }
+
+  async function deleteTbcGuests(guests) {
+    const count = guests?.length || 0;
+    if (!count) return;
+    const confirmation = window.prompt(
+      `This will permanently delete all ${count} guests currently shown under TBC. Type DELETE to confirm.`,
+    );
+    if (confirmation !== "DELETE") return;
+
+    setBusyId("tbc");
+    setError("");
+    setMessage("");
+    const { data: deletedCount, error: rpcError } = await supabase.rpc("delete_tbc_guests", {
+      p_reason: `Bulk deleted ${count} TBC guests in Operations Mode`,
+      p_device_id: deviceId,
+      p_device_label: deviceLabel,
+    });
+    let deleteError = rpcError;
+    let deletedTotal = deletedCount || count;
+
+    if (isMissingRpc(rpcError)) {
+      const { data: deletedRows, error: fallbackError } = await supabase.from("guests").delete().is("table_id", null).select("id");
+      deleteError = fallbackError;
+      deletedTotal = deletedRows?.length || count;
+    }
+
+    if (deleteError) {
+      setError(deleteError.message);
+    } else {
+      setSelectedGuestId(null);
+      setEditGuest(null);
+      setMessage(`${deletedTotal} TBC guests deleted.`);
+      await loadAllData(false);
+    }
+    setBusyId(null);
+  }
+
   async function saveQrLinks() {
     setError("");
     setMessage("");
@@ -614,6 +687,8 @@ export default function CheckInApp() {
           setQuery={setQuery}
           setEditGuest={setEditGuest}
           assignTable={assignTable}
+          deleteGuest={deleteGuest}
+          deleteTbcGuests={deleteTbcGuests}
           assetUrl={assetUrl}
           setAssetUrl={setAssetUrl}
           feedbackUrl={feedbackUrl}
@@ -630,6 +705,7 @@ export default function CheckInApp() {
           setGuest={setEditGuest}
           onSave={saveGuestDetails}
           onAssignTable={assignTable}
+          onDelete={deleteGuest}
           onClose={() => setEditGuest(null)}
           busy={busyId === editGuest.id}
         />
@@ -813,7 +889,7 @@ function Metric({ label, value }) {
   );
 }
 
-function GuestManagement({ guests, query, setQuery, setEditGuest }) {
+function GuestManagement({ guests, query, setQuery, setEditGuest, deleteGuest, busyId }) {
   return (
     <div className="ops-panel">
       <div className="toolbar">
@@ -836,19 +912,33 @@ function GuestManagement({ guests, query, setQuery, setEditGuest }) {
               <Pencil size={14} /> Edit
             </button>
           )],
+          ["Delete", (row) => (
+            <button className="small-btn danger-btn" disabled={busyId === row.id} onClick={() => deleteGuest(row)}>
+              <Trash2 size={14} /> Delete
+            </button>
+          )],
         ]}
       />
     </div>
   );
 }
 
-function SeatingPlan({ guestsByTable, assignTable, setEditGuest, busyId }) {
+function SeatingPlan({ guestsByTable, setEditGuest, deleteGuest, deleteTbcGuests, busyId }) {
   return (
     <div className="seating-grid">
       {guestsByTable.map((group) => (
         <section key={group.table.id} className="table-card">
-          <h2>{group.table.table_number === "TBC" ? "TBC" : `Table ${group.table.table_number}`}</h2>
-          <p>{group.guests.length} assigned{group.table.capacity ? ` of ${group.table.capacity}` : ""}</p>
+          <div className="table-card-header">
+            <div>
+              <h2>{group.table.table_number === "TBC" ? "TBC" : `Table ${group.table.table_number}`}</h2>
+              <p>{group.guests.length} assigned{group.table.capacity ? ` of ${group.table.capacity}` : ""}</p>
+            </div>
+            {group.table.table_number === "TBC" && group.guests.length > 0 && (
+              <button className="small-btn danger-btn" disabled={busyId === "tbc"} onClick={() => deleteTbcGuests(group.guests)}>
+                <Trash2 size={14} /> Clear TBC
+              </button>
+            )}
+          </div>
           <div className="table-guests">
             {group.guests.map((guest) => (
               <div key={guest.id} className="table-guest">
@@ -856,9 +946,14 @@ function SeatingPlan({ guestsByTable, assignTable, setEditGuest, busyId }) {
                   <strong>{guest.full_name}</strong>
                   <span>{guest.dietary_notes || guest.accessibility_notes || guest.organisation_name || ""}</span>
                 </div>
-                <button className="small-btn" disabled={busyId === guest.id} onClick={() => setEditGuest({ ...guest })}>
-                  Edit
-                </button>
+                <div className="table-guest-actions">
+                  <button className="small-btn" disabled={busyId === guest.id} onClick={() => setEditGuest({ ...guest })}>
+                    Edit
+                  </button>
+                  <button className="small-btn danger-btn" disabled={busyId === guest.id} onClick={() => deleteGuest(guest)}>
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -961,7 +1056,7 @@ function AuditLog({ data }) {
   );
 }
 
-function GuestEditModal({ guest, tables, setGuest, onSave, onAssignTable, onClose, busy }) {
+function GuestEditModal({ guest, tables, setGuest, onSave, onAssignTable, onDelete, onClose, busy }) {
   const currentTable = guest.event_tables?.table_number || "";
   const [tableNumber, setTableNumber] = useState(currentTable);
 
@@ -1022,6 +1117,9 @@ function GuestEditModal({ guest, tables, setGuest, onSave, onAssignTable, onClos
           </label>
         </div>
         <footer>
+          <button className="secondary-btn danger-btn" onClick={() => onDelete(guest)} disabled={busy}>
+            <Trash2 size={16} /> Delete guest
+          </button>
           <button className="secondary-btn" onClick={() => onAssignTable(guest, tableNumber)} disabled={busy}>
             Move table
           </button>
