@@ -175,6 +175,45 @@ input::placeholder {
   gap: 10px;
 }
 
+.active-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 180px;
+  max-width: 260px;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent);
+  padding: 7px 11px;
+}
+
+.active-user div {
+  min-width: 0;
+}
+
+.active-user span,
+.active-user strong {
+  display: block;
+}
+
+.active-user span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.active-user strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .device-label {
   min-width: 160px;
 }
@@ -579,6 +618,223 @@ button:disabled {
   gap: 16px;
 }
 
+.dashboard-visuals {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(520px, 1.7fr);
+  gap: 16px;
+}
+
+.visual-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(214, 167, 58, 0.08), transparent 34%),
+    var(--panel-soft);
+  padding: 18px;
+}
+
+.visual-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.visual-card-heading h2,
+.visual-card-heading p {
+  margin: 0;
+}
+
+.visual-card-heading h2 {
+  margin-top: 3px;
+}
+
+.live-indicator,
+.completion-summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid rgba(46, 212, 122, 0.4);
+  border-radius: 999px;
+  background: rgba(46, 212, 122, 0.1);
+  color: var(--success);
+  padding: 4px 9px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.arrival-chart-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  gap: 18px;
+}
+
+.progress-ring {
+  --progress: 0%;
+  display: grid;
+  width: 166px;
+  height: 166px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--primary-dark) var(--progress), rgba(255, 255, 255, 0.08) 0);
+  box-shadow: inset 0 0 28px rgba(214, 167, 58, 0.12), 0 16px 32px rgba(0, 0, 0, 0.2);
+}
+
+.progress-ring-centre {
+  display: grid;
+  width: 126px;
+  height: 126px;
+  place-items: center;
+  align-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel-strong);
+}
+
+.progress-ring-centre strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.progress-ring-centre span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.arrival-breakdown {
+  display: grid;
+  gap: 10px;
+}
+
+.arrival-breakdown > div:not(.attendance-track) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.arrival-breakdown p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.arrival-breakdown strong {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.chart-key {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+}
+
+.arrived-key {
+  background: var(--primary-dark);
+}
+
+.outstanding-key {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.attendance-track,
+.table-progress-track {
+  overflow: hidden;
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.attendance-track {
+  height: 10px;
+  margin-top: 4px;
+}
+
+.attendance-track span,
+.table-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold-gradient);
+  transition: width 240ms ease;
+}
+
+.desk-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.visual-stat {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(5, 8, 14, 0.48);
+  padding: 10px;
+}
+
+.visual-stat strong,
+.visual-stat span {
+  display: block;
+}
+
+.visual-stat strong {
+  font-size: 1.2rem;
+}
+
+.visual-stat span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.table-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.table-progress-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(5, 8, 14, 0.52);
+  padding: 10px 11px;
+}
+
+.table-progress-item.complete {
+  border-color: rgba(46, 212, 122, 0.42);
+  background: rgba(46, 212, 122, 0.07);
+}
+
+.table-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.table-progress-label span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.table-progress-track {
+  height: 7px;
+}
+
+.table-progress-item.complete .table-progress-track span {
+  background: var(--success);
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -810,6 +1066,7 @@ th {
 
   .tablet-layout,
   .two-column,
+  .dashboard-visuals,
   .qr-grid {
     grid-template-columns: 1fr;
   }
@@ -820,6 +1077,11 @@ th {
 
   .guest-list {
     max-height: 280px;
+  }
+
+  .active-user {
+    width: 100%;
+    max-width: none;
   }
 }
 
@@ -842,8 +1104,14 @@ th {
   .action-row,
   .undo-row,
   .metric-grid,
+  .arrival-chart-row,
+  .desk-stat-grid,
   .modal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .progress-ring {
+    justify-self: center;
   }
 
   .guest-hero {
