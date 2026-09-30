@@ -107,7 +107,7 @@ function isMissingRpc(error) {
 export default function CheckInApp() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [authMode, setAuthMode] = useState("sign-in");
+  const [activationState, setActivationState] = useState({ can_claim_first_admin: true });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -132,8 +132,10 @@ export default function CheckInApp() {
   });
   const [assetUrl, setAssetUrl] = useState(PROGRAMME_URL);
   const [feedbackUrl, setFeedbackUrl] = useState("");
+  const [staffAccounts, setStaffAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [staffBusyId, setStaffBusyId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -185,6 +187,11 @@ export default function CheckInApp() {
     return () => supabase.removeChannel(channel);
   }, [profile?.active]);
 
+  useEffect(() => {
+    if (profile?.role === "admin") loadStaffAccounts();
+    else setStaffAccounts([]);
+  }, [profile?.role]);
+
   async function loadProfileAndData() {
     setLoading(true);
     setError("");
@@ -203,8 +210,20 @@ export default function CheckInApp() {
     setProfile(profileData);
     if (profileData?.active) {
       await loadAllData(false);
+    } else {
+      const { data: stateData, error: stateError } = await supabase.rpc("get_staff_activation_state");
+      if (!stateError && stateData) setActivationState(stateData);
     }
     setLoading(false);
+  }
+
+  async function loadStaffAccounts() {
+    const { data: accounts, error: accountsError } = await supabase.rpc("list_staff_accounts");
+    if (accountsError) {
+      setError(accountsError.message);
+      return;
+    }
+    setStaffAccounts(accounts || []);
   }
 
   async function loadAllData(showSpinner = true) {
@@ -289,12 +308,9 @@ export default function CheckInApp() {
     setError("");
     setMessage("");
     setLoading(true);
-    const { error: authError } =
-      authMode === "sign-up"
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) setError(authError.message);
-    else setMessage(authMode === "sign-up" ? "Account created. Check your inbox if email confirmation is enabled." : "Signed in.");
+    else setMessage("Signed in.");
     setLoading(false);
   }
 
@@ -317,6 +333,28 @@ export default function CheckInApp() {
   async function signOut() {
     await supabase.auth.signOut();
     setSession(null);
+  }
+
+  function updateStaffAccount(userId, field, value) {
+    setStaffAccounts((current) => current.map((account) => (account.user_id === userId ? { ...account, [field]: value } : account)));
+  }
+
+  async function saveStaffAccount(account) {
+    setStaffBusyId(account.user_id);
+    setError("");
+    setMessage("");
+    const { error: saveError } = await supabase.rpc("set_staff_account_access", {
+      p_user_id: account.user_id,
+      p_full_name: account.full_name || null,
+      p_role: account.role,
+      p_active: account.active,
+    });
+    if (saveError) setError(saveError.message);
+    else {
+      setMessage(`Access updated for ${account.email}.`);
+      await loadStaffAccounts();
+    }
+    setStaffBusyId(null);
   }
 
   async function recordAttendance(guest, action, reason = null) {
@@ -586,10 +624,7 @@ export default function CheckInApp() {
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
           <button type="submit" className="primary-btn" disabled={loading}>
-            {authMode === "sign-in" ? "Sign in" : "Create account"}
-          </button>
-          <button type="button" className="text-btn" onClick={() => setAuthMode(authMode === "sign-in" ? "sign-up" : "sign-in")}>
-            {authMode === "sign-in" ? "Create the first app user" : "Back to sign in"}
+            Sign in
           </button>
         </form>
       </main>
@@ -601,16 +636,25 @@ export default function CheckInApp() {
       <main className="center-screen">
         <div className="auth-panel">
           <ShieldCheck size={34} />
-          <h1>Activate staff access</h1>
-          <p>If this is the first active admin account, claim it here. Otherwise an existing admin will need to activate your profile.</p>
+          <h1>Staff access pending</h1>
+          <p>
+            {activationState.can_claim_first_admin
+              ? "No administrator has been activated yet. The first authorised account can claim administrator access below."
+              : "Your sign-in is valid, but this staff profile is awaiting activation by an administrator."}
+          </p>
           <label>
             Full name
             <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder={session.user.email} />
           </label>
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
-          <button type="button" className="primary-btn" onClick={claimFirstAdmin} disabled={loading}>
-            Claim first admin
+          {activationState.can_claim_first_admin && (
+            <button type="button" className="primary-btn" onClick={claimFirstAdmin} disabled={loading}>
+              Claim first admin
+            </button>
+          )}
+          <button type="button" className="secondary-btn" onClick={loadProfileAndData} disabled={loading}>
+            <RefreshCw size={17} /> Check access again
           </button>
           <button type="button" className="text-btn" onClick={signOut}>
             Sign out
@@ -695,6 +739,11 @@ export default function CheckInApp() {
           setFeedbackUrl={setFeedbackUrl}
           saveQrLinks={saveQrLinks}
           busyId={busyId}
+          profile={profile}
+          staffAccounts={staffAccounts}
+          updateStaffAccount={updateStaffAccount}
+          saveStaffAccount={saveStaffAccount}
+          staffBusyId={staffBusyId}
         />
       )}
 
@@ -818,6 +867,7 @@ function OperationsMode(props) {
     ["qr", "QR links"],
     ["audit", "Audit"],
   ];
+  if (props.profile?.role === "admin") tabs.push(["staff", "Staff access"]);
 
   return (
     <section className="ops-layout">
@@ -834,7 +884,82 @@ function OperationsMode(props) {
       {props.activeTab === "exports" && <Exports data={props.data} />}
       {props.activeTab === "qr" && <QrLinks {...props} />}
       {props.activeTab === "audit" && <AuditLog data={props.data} />}
+      {props.activeTab === "staff" && <StaffAccess {...props} />}
     </section>
+  );
+}
+
+function StaffAccess({ staffAccounts, updateStaffAccount, saveStaffAccount, staffBusyId, profile }) {
+  return (
+    <div className="ops-panel">
+      <div className="section-heading">
+        <div>
+          <h2>Staff access</h2>
+          <p>Accounts are created in Supabase Authentication, then their access and role can be controlled here.</p>
+        </div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Full name</th>
+              <th>Role</th>
+              <th>Active</th>
+              <th>Last sign-in</th>
+              <th>Save</th>
+            </tr>
+          </thead>
+          <tbody>
+            {staffAccounts.map((account) => {
+              const isCurrentAdmin = account.user_id === profile?.user_id;
+              return (
+                <tr key={account.user_id}>
+                  <td>{account.email}</td>
+                  <td>
+                    <input
+                      value={account.full_name || ""}
+                      onChange={(event) => updateStaffAccount(account.user_id, "full_name", event.target.value)}
+                      aria-label={`Full name for ${account.email}`}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={account.role}
+                      disabled={isCurrentAdmin}
+                      onChange={(event) => updateStaffAccount(account.user_id, "role", event.target.value)}
+                      aria-label={`Role for ${account.email}`}
+                    >
+                      <option value="check_in">Check-in staff</option>
+                      <option value="event_manager">Event manager</option>
+                      <option value="admin">Administrator</option>
+                    </select>
+                  </td>
+                  <td>
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={account.active}
+                        disabled={isCurrentAdmin}
+                        onChange={(event) => updateStaffAccount(account.user_id, "active", event.target.checked)}
+                      />
+                      {account.active ? "Active" : "Inactive"}
+                    </label>
+                  </td>
+                  <td>{account.last_sign_in_at ? formatDateTime(account.last_sign_in_at) : "Not yet"}</td>
+                  <td>
+                    <button className="small-btn" disabled={staffBusyId === account.user_id} onClick={() => saveStaffAccount(account)}>
+                      Save
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {!staffAccounts.length && <EmptyState title="No staff accounts found" text="Create the user in Supabase Authentication, then refresh this page." />}
+    </div>
   );
 }
 
