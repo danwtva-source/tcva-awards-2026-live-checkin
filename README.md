@@ -86,7 +86,7 @@ Tablet Sign-In Mode:
 
 Operations Mode:
 
-- live dashboard
+- live dashboard with clickable table arrival overviews
 - category and table attendance summaries
 - guest creation, search, quick check-in, editing and deletion
 - seating/table reassignment

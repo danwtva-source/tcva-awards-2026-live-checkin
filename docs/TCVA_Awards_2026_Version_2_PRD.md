@@ -83,6 +83,7 @@ Version 2 removes the previously proposed automatic email flow. Instead, guests 
 | Dashboard totals | Implemented |
 | Category attendance summary | Implemented |
 | Table attendance summary | Implemented |
+| Clickable table overview showing arrived and outstanding guests | Implemented |
 | Guest search | Implemented |
 | Quick guest check-in from the Guests view | Implemented |
 | Add guest with table and linked-party assignment | Implemented |
@@ -241,6 +242,7 @@ npm run dev
 - Operations Mode can move a guest to a different table.
 - Seating changes appear on tablet search and guest detail views.
 - Dashboard and summaries reflect live attendance.
+- Each dashboard table card opens a live overview of arrived and outstanding guests at that table.
 - CSV exports download successfully.
 - Programme QR code opens the final programme PDF link.
 - Feedback QR code appears after the final feedback URL is entered.

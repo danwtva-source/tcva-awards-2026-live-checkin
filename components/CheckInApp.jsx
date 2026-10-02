@@ -18,6 +18,7 @@ import {
   Trash2,
   Undo2,
   Users,
+  X,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { downloadCsv } from "@/lib/csv";
@@ -1059,6 +1060,7 @@ function StaffAccess({ staffAccounts, updateStaffAccount, saveStaffAccount, staf
 }
 
 function Dashboard({ data }) {
+  const [selectedTableId, setSelectedTableId] = useState(null);
   const dashboard = data.dashboard || {};
   const expected = Number(dashboard.total_expected || 0);
   const arrived = Number(dashboard.total_arrived || 0);
@@ -1081,6 +1083,14 @@ function Dashboard({ data }) {
   const completeTables = tableRows.filter((row) => row.assigned > 0 && row.arrived >= row.assigned).length;
   const dietaryFlags = tableRows.reduce((total, row) => total + Number(row.dietary_flags || 0), 0);
   const accessibilityFlags = tableRows.reduce((total, row) => total + Number(row.accessibility_flags || 0), 0);
+  const selectedTable = tableRows.find((row) => row.table_id === selectedTableId);
+  const selectedTableGuests = selectedTable
+    ? data.guests
+        .filter((guest) => guest.table_id === selectedTableId)
+        .sort((a, b) => a.full_name.localeCompare(b.full_name))
+    : [];
+  const arrivedTableGuests = selectedTableGuests.filter((guest) => guest.attendance_status === "arrived");
+  const outstandingTableGuests = selectedTableGuests.filter((guest) => guest.attendance_status !== "arrived");
 
   return (
     <div className="ops-panel">
@@ -1142,7 +1152,14 @@ function Dashboard({ data }) {
           </div>
           <div className="table-progress-grid">
             {tableRows.map((row) => (
-              <div className={`table-progress-item ${row.attendancePercent === 100 ? "complete" : ""}`} key={row.id || row.table_number}>
+              <button
+                type="button"
+                className={`table-progress-item ${row.attendancePercent === 100 ? "complete" : ""}`}
+                key={row.table_id || row.table_number}
+                onClick={() => setSelectedTableId(row.table_id)}
+                aria-haspopup="dialog"
+                aria-label={`View guests at table ${row.table_number}`}
+              >
                 <div className="table-progress-label">
                   <strong>{row.table_number === "TBC" ? "TBC" : `Table ${row.table_number}`}</strong>
                   <span>{row.arrived} of {row.assigned}</span>
@@ -1157,13 +1174,71 @@ function Dashboard({ data }) {
                 >
                   <span style={{ width: `${row.attendancePercent}%` }} />
                 </div>
-              </div>
+                <span className="table-progress-action">View guests</span>
+              </button>
             ))}
           </div>
           {!tableRows.length && <EmptyState title="No table data yet" text="Table progress will appear as guests are assigned." />}
         </section>
       </div>
+
+      {selectedTable && (
+        <div className="modal-backdrop" onClick={() => setSelectedTableId(null)}>
+          <div
+            className="modal table-arrivals-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="table-arrivals-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header>
+              <div>
+                <p className="eyebrow">Live table overview</p>
+                <h2 id="table-arrivals-title">Table {selectedTable.table_number}</h2>
+              </div>
+              <button className="icon-btn" type="button" onClick={() => setSelectedTableId(null)} aria-label="Close table overview">
+                <X size={20} />
+              </button>
+            </header>
+            <div className="table-arrivals-summary">
+              <VisualStat label="Guests" value={selectedTableGuests.length} />
+              <VisualStat label="Arrived" value={arrivedTableGuests.length} />
+              <VisualStat label="Not arrived" value={outstandingTableGuests.length} />
+            </div>
+            <div className="table-arrivals-groups">
+              <TableGuestGroup title="Arrived" guests={arrivedTableGuests} emptyText="No guests have arrived yet." />
+              <TableGuestGroup title="Not arrived" guests={outstandingTableGuests} emptyText="Everyone at this table has arrived." />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function TableGuestGroup({ title, guests, emptyText }) {
+  return (
+    <section className="table-guest-group">
+      <div className="table-guest-group-heading">
+        <h3>{title}</h3>
+        <span>{guests.length}</span>
+      </div>
+      {guests.length ? (
+        <ul className="table-guest-list">
+          {guests.map((guest) => (
+            <li key={guest.id}>
+              <div>
+                <strong>{guest.full_name}</strong>
+                <span>{finalistSafeLabel(guest.organisation_name) || confirmationLabel(guest.confirmation_status)}</span>
+              </div>
+              <StatusPill status={guest.attendance_status} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="table-guest-empty">{emptyText}</p>
+      )}
+    </section>
   );
 }
 
