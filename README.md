@@ -88,7 +88,7 @@ Operations Mode:
 
 - live dashboard
 - category and table attendance summaries
-- guest creation, search, editing and deletion
+- guest creation, search, quick check-in, editing and deletion
 - seating/table reassignment
 - CSV exports
 - QR management for programme and feedback links

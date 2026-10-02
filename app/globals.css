@@ -307,6 +307,21 @@ input::placeholder {
   padding: 5px 9px;
 }
 
+.quick-checkin-btn {
+  border-color: rgba(46, 212, 122, 0.55);
+  color: #b7f7d4;
+}
+
+.quick-checkin-btn:hover {
+  background: rgba(46, 212, 122, 0.12);
+}
+
+.arrived-btn {
+  border-color: rgba(46, 212, 122, 0.34);
+  background: rgba(46, 212, 122, 0.1);
+  color: var(--success);
+}
+
 .danger-btn {
   border-color: rgba(248, 113, 113, 0.55);
   color: #fecaca;

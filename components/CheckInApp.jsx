@@ -812,6 +812,7 @@ export default function CheckInApp() {
           setQuery={setQuery}
           setEditGuest={setEditGuest}
           openAddGuest={openAddGuest}
+          recordAttendance={recordAttendance}
           assignTable={assignTable}
           deleteGuest={deleteGuest}
           deleteTbcGuests={deleteTbcGuests}
@@ -1184,7 +1185,7 @@ function VisualStat({ label, value }) {
   );
 }
 
-function GuestManagement({ guests, query, setQuery, setEditGuest, openAddGuest, deleteGuest, busyId, profile }) {
+function GuestManagement({ guests, query, setQuery, setEditGuest, openAddGuest, recordAttendance, deleteGuest, busyId, profile }) {
   const canManageGuests = profile?.role === "admin" || profile?.role === "event_manager";
 
   return (
@@ -1206,6 +1207,18 @@ function GuestManagement({ guests, query, setQuery, setEditGuest, openAddGuest, 
           ["Name", (row) => row.full_name],
           ["Table", (row) => tableLabel(row)],
           ["Status", (row) => statusLabel(row.attendance_status)],
+          ["Check-in", (row) => {
+            const hasArrived = row.attendance_status === "arrived";
+            return (
+              <button
+                className={`small-btn ${hasArrived ? "arrived-btn" : "quick-checkin-btn"}`}
+                disabled={hasArrived || busyId === row.id}
+                onClick={() => recordAttendance(row, "check_in")}
+              >
+                <Check size={14} /> {hasArrived ? "Arrived" : "Check in"}
+              </button>
+            );
+          }],
           ["Confirmation", (row) => confirmationLabel(row.confirmation_status)],
           ["Organisation", (row) => finalistSafeLabel(row.organisation_name)],
           ["Dietary", (row) => row.dietary_notes],

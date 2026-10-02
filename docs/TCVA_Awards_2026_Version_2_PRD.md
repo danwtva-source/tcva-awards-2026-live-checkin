@@ -84,6 +84,7 @@ Version 2 removes the previously proposed automatic email flow. Instead, guests 
 | Category attendance summary | Implemented |
 | Table attendance summary | Implemented |
 | Guest search | Implemented |
+| Quick guest check-in from the Guests view | Implemented |
 | Add guest with table and linked-party assignment | Implemented |
 | Guest detail editing | Implemented |
 | Guest table reassignment | Implemented |
@@ -235,6 +236,7 @@ npm run dev
 - A linked party can be checked in together.
 - Undo requires a reason and writes an attendance/audit record.
 - Operations Mode can edit guest information.
+- Operations Mode can check in a guest directly from the Guests view.
 - Operations Mode can add a guest with an optional table and linked-party assignment.
 - Operations Mode can move a guest to a different table.
 - Seating changes appear on tablet search and guest detail views.
