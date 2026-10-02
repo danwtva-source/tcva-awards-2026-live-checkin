@@ -84,6 +84,7 @@ Version 2 removes the previously proposed automatic email flow. Instead, guests 
 | Category attendance summary | Implemented |
 | Table attendance summary | Implemented |
 | Guest search | Implemented |
+| Add guest with table and linked-party assignment | Implemented |
 | Guest detail editing | Implemented |
 | Guest table reassignment | Implemented |
 | Seating plan view grouped by table | Implemented |
@@ -223,8 +224,9 @@ npm run dev
 10. Run a test guest check-in on one device and verify the other device updates.
 11. Undo the test check-in with a reason and verify the audit trail.
 12. Test moving one guest to another table and verify the tablet view updates.
-13. Export guest, seating and attendance CSV files.
-14. Rotate the Supabase database password after setup is complete.
+13. Add a test guest, confirm the guest appears on both tablets, then remove the test record.
+14. Export guest, seating and attendance CSV files.
+15. Rotate the Supabase database password after setup is complete.
 
 ## 18. Acceptance Criteria
 
@@ -233,6 +235,7 @@ npm run dev
 - A linked party can be checked in together.
 - Undo requires a reason and writes an attendance/audit record.
 - Operations Mode can edit guest information.
+- Operations Mode can add a guest with an optional table and linked-party assignment.
 - Operations Mode can move a guest to a different table.
 - Seating changes appear on tablet search and guest detail views.
 - Dashboard and summaries reflect live attendance.

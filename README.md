@@ -40,7 +40,8 @@ Run the migrations in filename order:
 2. `supabase/migrations/002_editable_seating_and_guest_admin.sql`
 3. `supabase/migrations/003_complete_realtime_publication.sql`
 4. Continue with each later numbered migration in order, including
-   `007_staff_account_activation.sql` for staff-account provisioning and access management.
+   `007_staff_account_activation.sql` for staff-account provisioning and access management, and
+   `008_guest_creation.sql` for audited in-app guest creation.
 
 Alternative developer route:
 
@@ -87,7 +88,7 @@ Operations Mode:
 
 - live dashboard
 - category and table attendance summaries
-- guest search and editing
+- guest creation, search, editing and deletion
 - seating/table reassignment
 - CSV exports
 - QR management for programme and feedback links

@@ -9,6 +9,7 @@ import {
   LogOut,
   Monitor,
   Pencil,
+  Plus,
   QrCode,
   RefreshCw,
   Search,
@@ -122,6 +123,7 @@ export default function CheckInApp() {
   const [query, setQuery] = useState("");
   const [selectedGuestId, setSelectedGuestId] = useState(null);
   const [editGuest, setEditGuest] = useState(null);
+  const [addGuest, setAddGuest] = useState(null);
   const [undoReason, setUndoReason] = useState("");
   const [deviceLabel, setDeviceLabel] = useState("Device");
   const [data, setData] = useState({
@@ -427,6 +429,72 @@ export default function CheckInApp() {
     if (updateError) setError(updateError.message);
     else {
       setEditGuest(null);
+      await loadAllData(false);
+    }
+    setBusyId(null);
+  }
+
+  function openAddGuest() {
+    setError("");
+    setMessage("");
+    setAddGuest({
+      full_name: "",
+      organisation_name: "",
+      role_label: "",
+      relationship_label: "",
+      award_category: "",
+      phone: "",
+      email: "",
+      dietary_notes: "",
+      accessibility_notes: "",
+      admin_notes: "",
+      confirmation_status: "confirmed",
+      seating_status: "tbc",
+      seat_sort_order: "",
+      party_id: "",
+      table_number: "",
+    });
+  }
+
+  async function createGuest() {
+    const fullName = addGuest?.full_name?.trim();
+    if (!fullName) {
+      setError("Guest name is required.");
+      return;
+    }
+
+    setBusyId("new-guest");
+    setError("");
+    setMessage("");
+    const { data: createdGuest, error: createError } = await supabase.rpc("create_guest", {
+      p_guest: {
+        full_name: fullName,
+        organisation_name: addGuest.organisation_name,
+        role_label: addGuest.role_label,
+        relationship_label: addGuest.relationship_label,
+        award_category: addGuest.award_category,
+        phone: addGuest.phone,
+        email: addGuest.email,
+        dietary_notes: addGuest.dietary_notes,
+        accessibility_notes: addGuest.accessibility_notes,
+        admin_notes: addGuest.admin_notes,
+        confirmation_status: addGuest.confirmation_status,
+        seating_status: addGuest.seating_status,
+        seat_sort_order: addGuest.seat_sort_order || null,
+      },
+      p_table_number: addGuest.table_number || null,
+      p_party_id: addGuest.party_id || null,
+      p_reason: "Added in Operations Mode",
+      p_device_id: deviceId,
+      p_device_label: deviceLabel,
+    });
+
+    if (createError) {
+      setError(createError.message);
+    } else {
+      setAddGuest(null);
+      setSelectedGuestId(createdGuest?.id || null);
+      setMessage(`${fullName} added.`);
       await loadAllData(false);
     }
     setBusyId(null);
@@ -743,6 +811,7 @@ export default function CheckInApp() {
           query={query}
           setQuery={setQuery}
           setEditGuest={setEditGuest}
+          openAddGuest={openAddGuest}
           assignTable={assignTable}
           deleteGuest={deleteGuest}
           deleteTbcGuests={deleteTbcGuests}
@@ -770,6 +839,18 @@ export default function CheckInApp() {
           onDelete={deleteGuest}
           onClose={() => setEditGuest(null)}
           busy={busyId === editGuest.id}
+        />
+      )}
+
+      {addGuest && (
+        <GuestAddModal
+          guest={addGuest}
+          tables={data.tables}
+          parties={data.parties}
+          setGuest={setAddGuest}
+          onSave={createGuest}
+          onClose={() => setAddGuest(null)}
+          busy={busyId === "new-guest"}
         />
       )}
     </main>
@@ -1103,7 +1184,9 @@ function VisualStat({ label, value }) {
   );
 }
 
-function GuestManagement({ guests, query, setQuery, setEditGuest, deleteGuest, busyId }) {
+function GuestManagement({ guests, query, setQuery, setEditGuest, openAddGuest, deleteGuest, busyId, profile }) {
+  const canManageGuests = profile?.role === "admin" || profile?.role === "event_manager";
+
   return (
     <div className="ops-panel">
       <div className="toolbar">
@@ -1111,6 +1194,11 @@ function GuestManagement({ guests, query, setQuery, setEditGuest, deleteGuest, b
           <Search size={18} />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search guests" />
         </div>
+        {canManageGuests && (
+          <button className="primary-btn" onClick={openAddGuest}>
+            <Plus size={18} /> Add guest
+          </button>
+        )}
       </div>
       <DataTable
         rows={guests}
@@ -1137,42 +1225,154 @@ function GuestManagement({ guests, query, setQuery, setEditGuest, deleteGuest, b
   );
 }
 
-function SeatingPlan({ guestsByTable, setEditGuest, deleteGuest, deleteTbcGuests, busyId }) {
+function SeatingPlan({ guestsByTable, setEditGuest, openAddGuest, deleteGuest, deleteTbcGuests, busyId, profile }) {
+  const canManageGuests = profile?.role === "admin" || profile?.role === "event_manager";
+
   return (
-    <div className="seating-grid">
-      {guestsByTable.map((group) => (
-        <section key={group.table.id} className="table-card">
-          <div className="table-card-header">
-            <div>
-              <h2>{group.table.table_number === "TBC" ? "TBC" : `Table ${group.table.table_number}`}</h2>
-              <p>{group.guests.length} assigned{group.table.capacity ? ` of ${group.table.capacity}` : ""}</p>
-            </div>
-            {group.table.table_number === "TBC" && group.guests.length > 0 && (
-              <button className="small-btn danger-btn" disabled={busyId === "tbc"} onClick={() => deleteTbcGuests(group.guests)}>
-                <Trash2 size={14} /> Clear TBC
-              </button>
-            )}
-          </div>
-          <div className="table-guests">
-            {group.guests.map((guest) => (
-              <div key={guest.id} className="table-guest">
-                <div>
-                  <strong>{guest.full_name}</strong>
-                  <span>{guest.dietary_notes || guest.accessibility_notes || guest.organisation_name || ""}</span>
-                </div>
-                <div className="table-guest-actions">
-                  <button className="small-btn" disabled={busyId === guest.id} onClick={() => setEditGuest({ ...guest })}>
-                    Edit
-                  </button>
-                  <button className="small-btn danger-btn" disabled={busyId === guest.id} onClick={() => deleteGuest(guest)}>
-                    Delete
-                  </button>
-                </div>
+    <div className="seating-view">
+      <div className="section-heading seating-heading">
+        <div>
+          <h2>Seating plan</h2>
+          <p>Add guests, review assignments and move guests between tables.</p>
+        </div>
+        {canManageGuests && (
+          <button className="primary-btn" onClick={openAddGuest}>
+            <Plus size={18} /> Add guest
+          </button>
+        )}
+      </div>
+      <div className="seating-grid">
+        {guestsByTable.map((group) => (
+          <section key={group.table.id} className="table-card">
+            <div className="table-card-header">
+              <div>
+                <h2>{group.table.table_number === "TBC" ? "TBC" : `Table ${group.table.table_number}`}</h2>
+                <p>{group.guests.length} assigned{group.table.capacity ? ` of ${group.table.capacity}` : ""}</p>
               </div>
-            ))}
+              {group.table.table_number === "TBC" && group.guests.length > 0 && (
+                <button className="small-btn danger-btn" disabled={busyId === "tbc"} onClick={() => deleteTbcGuests(group.guests)}>
+                  <Trash2 size={14} /> Clear TBC
+                </button>
+              )}
+            </div>
+            <div className="table-guests">
+              {group.guests.map((guest) => (
+                <div key={guest.id} className="table-guest">
+                  <div>
+                    <strong>{guest.full_name}</strong>
+                    <span>{guest.dietary_notes || guest.accessibility_notes || guest.organisation_name || ""}</span>
+                  </div>
+                  <div className="table-guest-actions">
+                    <button className="small-btn" disabled={busyId === guest.id} onClick={() => setEditGuest({ ...guest })}>
+                      Edit
+                    </button>
+                    <button className="small-btn danger-btn" disabled={busyId === guest.id} onClick={() => deleteGuest(guest)}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GuestAddModal({ guest, tables, parties, setGuest, onSave, onClose, busy }) {
+  const fields = [
+    ["full_name", "Name", true],
+    ["organisation_name", "Organisation"],
+    ["role_label", "Role"],
+    ["relationship_label", "Relationship"],
+    ["award_category", "Category"],
+    ["phone", "Phone"],
+    ["email", "Email"],
+    ["dietary_notes", "Dietary notes"],
+    ["accessibility_notes", "Accessibility notes"],
+    ["admin_notes", "Admin notes"],
+  ];
+
+  function updateTable(tableNumber) {
+    setGuest({
+      ...guest,
+      table_number: tableNumber,
+      seating_status: tableNumber ? "assigned" : "tbc",
+    });
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal">
+        <header>
+          <div>
+            <p className="eyebrow">Operations mode</p>
+            <h2>Add Guest</h2>
           </div>
-        </section>
-      ))}
+          <button className="icon-btn" onClick={onClose} aria-label="Close add guest form">×</button>
+        </header>
+        <div className="modal-grid">
+          {fields.map(([key, label, required]) => (
+            <label key={key}>
+              {label}{required ? " *" : ""}
+              <input
+                value={guest[key] || ""}
+                onChange={(event) => setGuest({ ...guest, [key]: event.target.value })}
+                required={Boolean(required)}
+                autoFocus={key === "full_name"}
+              />
+            </label>
+          ))}
+          <label>
+            Confirmation
+            <select value={guest.confirmation_status} onChange={(event) => setGuest({ ...guest, confirmation_status: event.target.value })}>
+              <option value="confirmed">Confirmed</option>
+              <option value="unconfirmed">Unconfirmed</option>
+              <option value="declined">Declined</option>
+              <option value="waitlist">Waiting list</option>
+              <option value="tbc">TBC</option>
+            </select>
+          </label>
+          <label>
+            Table
+            <select value={guest.table_number} onChange={(event) => updateTable(event.target.value)}>
+              <option value="">TBC</option>
+              {tables.map((table) => (
+                <option key={table.id} value={table.table_number}>Table {table.table_number}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Linked party (optional)
+            <select value={guest.party_id} onChange={(event) => setGuest({ ...guest, party_id: event.target.value })}>
+              <option value="">No linked party</option>
+              {parties.map((party) => (
+                <option key={party.id} value={party.id}>{party.party_name || party.lead_guest_name || party.organisation_name || party.party_code || "Unnamed party"}</option>
+              ))}
+            </select>
+          </label>
+          {!guest.table_number && (
+            <label>
+              Seating status
+              <select value={guest.seating_status} onChange={(event) => setGuest({ ...guest, seating_status: event.target.value })}>
+                <option value="tbc">TBC</option>
+                <option value="unassigned">Unassigned</option>
+                <option value="not_required">Not required</option>
+              </select>
+            </label>
+          )}
+        </div>
+        <div className="modal-note">
+          The new guest will be added as Not arrived and will appear immediately on all signed-in devices.
+        </div>
+        <footer>
+          <button className="secondary-btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className="primary-btn" onClick={onSave} disabled={busy || !guest.full_name.trim()}>
+            <Plus size={17} /> Add guest
+          </button>
+        </footer>
+      </div>
     </div>
   );
 }
