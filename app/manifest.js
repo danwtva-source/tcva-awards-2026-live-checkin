@@ -1,8 +1,8 @@
 export default function manifest() {
   return {
-    name: "TCVA Awards 2026 Live Check-In",
+    name: "TCVA Live Check-In",
     short_name: "TCVA Check-In",
-    description: "Staff check-in and event operations app for the TCVA Awards 2026.",
+    description: "Staff check-in, event archive and operations app for TCVA events.",
     id: "/",
     start_url: "/",
     scope: "/",
@@ -36,7 +36,7 @@ export default function manifest() {
       {
         name: "Open Check-In",
         short_name: "Check-In",
-        description: "Open the live TCVA Awards check-in screen.",
+        description: "Open the live TCVA check-in screen.",
         url: "/",
         icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
       },

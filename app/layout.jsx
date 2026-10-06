@@ -2,12 +2,12 @@ import "./globals.css";
 
 export const metadata = {
   metadataBase: new URL("https://tcva-awards-2026-live-checkin.vercel.app"),
-  applicationName: "TCVA Check-In",
+  applicationName: "TCVA Live Check-In",
   title: {
-    default: "TCVA Awards 2026 Live Check-In",
-    template: "%s | TCVA Check-In",
+    default: "TCVA Live Check-In",
+    template: "%s | TCVA Live Check-In",
   },
-  description: "Supabase-backed TCVA Awards 2026 guest check-in and event operations app.",
+  description: "Supabase-backed TCVA guest check-in, event archive and operations app.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -20,7 +20,7 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "TCVA Check-In",
+    title: "TCVA Live Check-In",
   },
   formatDetection: {
     telephone: false,

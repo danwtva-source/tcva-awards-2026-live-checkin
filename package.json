@@ -2,7 +2,7 @@
   "name": "tcva-awards-2026-live-checkin",
   "version": "0.1.0",
   "private": true,
-  "description": "Connected Supabase and Vercel version of the TCVA Awards 2026 check-in app.",
+  "description": "Connected Supabase and Vercel version of the TCVA live check-in app.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

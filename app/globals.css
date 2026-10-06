@@ -55,7 +55,8 @@ body::before {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -107,7 +108,8 @@ a {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--line);
@@ -119,6 +121,10 @@ select {
 
 input::placeholder {
   color: rgba(213, 197, 158, 0.74);
+}
+
+textarea {
+  resize: vertical;
 }
 
 .brand-mark {
@@ -382,7 +388,10 @@ button:disabled {
 .checkin-panel,
 .ops-panel,
 .table-card,
-.qr-card {
+.qr-card,
+.form-card,
+.sub-panel,
+.inline-admin-form {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -1008,6 +1017,81 @@ button:disabled {
   color: var(--muted);
 }
 
+.compact-heading {
+  margin-bottom: 10px;
+}
+
+.form-card,
+.sub-panel,
+.inline-admin-form {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px;
+}
+
+.form-card h3,
+.sub-panel h3,
+.inline-admin-form h3 {
+  margin: 0;
+}
+
+.form-card p,
+.inline-admin-form p,
+.muted-text {
+  margin: 0;
+  color: var(--muted);
+}
+
+.button-row,
+.toggle-row,
+.attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.attachment-row {
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  padding: 9px 10px;
+}
+
+.event-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.85fr) minmax(360px, 1.15fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.event-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.inline-admin-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.inline-admin-form > div,
+.inline-admin-form .primary-btn {
+  align-self: end;
+}
+
+.inline-admin-form > div {
+  grid-column: span 2;
+}
+
 .toggle-label {
   display: inline-flex;
   align-items: center;
@@ -1227,8 +1311,14 @@ th {
   .two-column,
   .dashboard-visuals,
   .table-arrivals-groups,
-  .qr-grid {
+  .qr-grid,
+  .event-admin-grid,
+  .inline-admin-form {
     grid-template-columns: 1fr;
+  }
+
+  .inline-admin-form > div {
+    grid-column: auto;
   }
 
   .metric-grid {
