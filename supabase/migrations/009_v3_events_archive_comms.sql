@@ -2,7 +2,7 @@
 -- Run after 008_guest_creation.sql.
 
 begin;
- 
+
 do $$
 begin
   create type public.event_status as enum ('draft', 'active', 'archived');
@@ -1104,6 +1104,11 @@ begin
   return v_deleted;
 end;
 $$;
+
+drop view if exists public.seating_plan_export;
+drop view if exists public.table_attendance_summary;
+drop view if exists public.category_attendance_summary;
+drop view if exists public.dashboard_attendance_summary;
 
 create or replace view public.dashboard_attendance_summary
 with (security_invoker = true)
