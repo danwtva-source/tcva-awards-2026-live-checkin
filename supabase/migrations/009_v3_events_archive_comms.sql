@@ -2,7 +2,7 @@
 -- Run after 008_guest_creation.sql.
 
 begin;
-
+ 
 do $$
 begin
   create type public.event_status as enum ('draft', 'active', 'archived');
