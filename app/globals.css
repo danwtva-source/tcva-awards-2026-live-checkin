@@ -1188,14 +1188,63 @@ th {
 }
 
 .export-panel {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  gap: 18px;
+}
+
+.export-section {
+  display: grid;
   gap: 12px;
 }
 
-.export-panel h2 {
-  width: 100%;
+.export-section h3 {
+  margin: 0;
+}
+
+.report-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.report-directory-card {
+  display: grid;
+  gap: 14px;
+  align-content: space-between;
+  min-height: 210px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  padding: 14px;
+}
+
+.report-directory-card h4 {
+  margin: 0 0 8px;
+}
+
+.report-directory-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.report-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.report-card-footer span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.report-card-footer .secondary-btn {
+  min-height: 44px;
 }
 
 .qr-grid {

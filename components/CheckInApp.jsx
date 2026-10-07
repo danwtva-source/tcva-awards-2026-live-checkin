@@ -29,6 +29,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { downloadCsv } from "@/lib/csv";
 import { confirmationLabel, finalistSafeLabel, formatDateTime, normaliseText, statusLabel, tableLabel } from "@/lib/format";
+import { buildReportExport, reportFilename, REPORT_EXPORTS } from "@/lib/reportExports";
 import { hasSupabaseConfig, supabase } from "@/lib/supabaseClient";
 
 const PROGRAMME_URL =
@@ -377,7 +378,7 @@ export default function CheckInApp() {
       supabase.from("dashboard_attendance_summary").select("*").maybeSingle(),
       supabase.from("category_attendance_summary").select("*").order("award_category"),
       supabase.from("table_attendance_summary").select("*"),
-      supabase.from("attendance_events").select("*").eq("event_id", activeEvent.id).order("created_at", { ascending: false }).limit(200),
+      supabase.from("attendance_events").select("*").eq("event_id", activeEvent.id).order("created_at", { ascending: false }).limit(5000),
       supabase.from("audit_log").select("*").eq("event_id", activeEvent.id).order("created_at", { ascending: false }).limit(200),
     ]);
 
@@ -2218,6 +2219,11 @@ function Exports({ data }) {
     downloadCsv(`${exportKey}-seating-plan.csv`, rows, Object.keys(rows[0] || {}).map((key) => ({ label: key, get: (row) => row[key] })));
   }
 
+  function downloadReport(key) {
+    const report = buildReportExport(key, data);
+    downloadCsv(reportFilename(exportKey, key), report.rows, report.columns);
+  }
+
   const guestColumns = [
     { label: "Name", get: (row) => row.full_name },
     { label: "Guest type", get: (row) => guestTypeLabel(row.guest_type, data.guestTypes) },
@@ -2236,28 +2242,81 @@ function Exports({ data }) {
     { label: "Email", get: (row) => row.email },
   ];
 
+  const currentExports = [
+    {
+      title: "Guest list",
+      why: "Full admin guest list with contact fields, attendance, table, guest type and private award fields where held.",
+      records: `${data.guests.length} guest records`,
+      onDownload: () => downloadCsv(`${exportKey}-guests.csv`, data.guests, guestColumns),
+    },
+    {
+      title: "Seating plan export",
+      why: "Export-ready seating rows from the database view, including retained event, table, notes and private manager fields.",
+      records: "Live seating view",
+      onDownload: downloadSeatingExport,
+    },
+    {
+      title: "Attendance events",
+      why: "Raw check-in, party check-in and undo history. Useful when you need the full audit trail behind the dashboard.",
+      records: `${data.attendanceEvents.length} event rows`,
+      onDownload: () =>
+        downloadCsv(
+          `${exportKey}-attendance-events.csv`,
+          data.attendanceEvents,
+          Object.keys(data.attendanceEvents[0] || {}).map((key) => ({ label: key, get: (row) => row[key] })),
+        ),
+    },
+  ];
+
   return (
     <div className="ops-panel export-panel">
-      <h2>CSV Exports</h2>
-      <button className="primary-btn" onClick={() => downloadCsv(`${exportKey}-guests.csv`, data.guests, guestColumns)}>
-        <Download size={18} /> Guest list
-      </button>
-      <button className="primary-btn" onClick={downloadSeatingExport}>
-        <Download size={18} /> Seating plan export
-      </button>
-      <button
-        className="primary-btn"
-        onClick={() =>
-          downloadCsv(
-            `${exportKey}-attendance-events.csv`,
-            data.attendanceEvents,
-            Object.keys(data.attendanceEvents[0] || {}).map((key) => ({ label: key, get: (row) => row[key] })),
-          )
-        }
-      >
-        <Download size={18} /> Attendance events
-      </button>
+      <div className="section-heading">
+        <div>
+          <h2>Reports and CSV exports</h2>
+          <p>Download the current export suite or use the report directory for event review, planning and data-quality checks.</p>
+        </div>
+      </div>
+      <section className="export-section">
+        <h3>Current export suite</h3>
+        <div className="report-directory-grid">
+          {currentExports.map((item) => (
+            <ExportDirectoryCard key={item.title} item={item} />
+          ))}
+        </div>
+      </section>
+      <section className="export-section">
+        <h3>Useful reports available now</h3>
+        <div className="report-directory-grid">
+          {REPORT_EXPORTS.map((item) => (
+            <ExportDirectoryCard
+              key={item.key}
+              item={{
+                ...item,
+                records: "CSV report",
+                onDownload: () => downloadReport(item.key),
+              }}
+            />
+          ))}
+        </div>
+      </section>
     </div>
+  );
+}
+
+function ExportDirectoryCard({ item }) {
+  return (
+    <article className="report-directory-card">
+      <div>
+        <h4>{item.title}</h4>
+        <p>{item.why}</p>
+      </div>
+      <div className="report-card-footer">
+        <span>{item.records}</span>
+        <button className="secondary-btn" type="button" onClick={item.onDownload}>
+          <Download size={17} /> Download
+        </button>
+      </div>
+    </article>
   );
 }
 

@@ -17,6 +17,7 @@ Version 3 converts the TCVA awards-night check-in app into an ongoing event mana
 - Support opt-in and manual override decisions for feedback email sending.
 - Allow event staff to manage feedback/programme email content and attachment links in Operations Mode.
 - Allow admins to create and activate staff users from inside the app.
+- Add a report directory that extends the existing CSV export suite with practical event review, operational and data-quality reports.
 
 ## 3. Out Of Scope
 
@@ -58,6 +59,7 @@ Version 3 converts the TCVA awards-night check-in app into an ongoing event mana
 | Feedback email API | `app/api/admin/send-feedback-emails/route.js` |
 | CSV utilities | `lib/csv.js` |
 | Formatting utilities | `lib/format.js` |
+| Report export utilities | `lib/reportExports.js` |
 | Version 3 migration | `supabase/migrations/009_v3_events_archive_comms.sql` |
 
 ## 7. Core Version 3 Requirements
@@ -80,6 +82,7 @@ Version 3 converts the TCVA awards-night check-in app into an ongoing event mana
 | Send feedback emails server-side when provider is configured | Implemented |
 | Add staff user from app as admin | Implemented |
 | Retain dashboard metrics in report archive | Implemented |
+| Add export/report directory with useful report explanations | Implemented |
 
 ## 8. Data Model Additions
 
@@ -125,7 +128,23 @@ Tablet Check-In Mode does not display `award_result` or `award_result_notes`.
 6. Sending requires server-side `RESEND_API_KEY` and `EMAIL_FROM_ADDRESS`.
 7. Each send attempt is written to `email_send_log`.
 
-## 12. Security Requirements
+## 12. Reports And Export Directory
+
+The Exports tab includes the original export suite and a report directory. Each report card explains why the report is useful and provides a CSV download for the active event.
+
+| Report | Why it is useful |
+| --- | --- |
+| Event summary report | Total guests, arrived, not arrived and attendance rate. Useful for a quick post-event summary and headline reporting. |
+| Table performance report | Assigned, arrived, not arrived and completion rate by table. Useful for spotting table-level no-shows and seating gaps. |
+| Arrival timeline | Check-ins by hour or 15-minute window. Useful for planning staffing, reception flow and tablet placement next year. |
+| Device and staff audit | Check-ins by device type and staff account, plus undo counts. Useful for operational review and troubleshooting. |
+| No-show report | No-shows by table, category, organisation and guest type. Useful for follow-up, future invite planning and data cleansing. |
+| Dietary and accessibility operations report | Counts and details by table, especially who has arrived or is still outstanding. Useful for front-of-house and venue coordination. |
+| Data quality report | Missing email, phone, category, organisation, seating and duplicate records. Useful before each event to clean the guest list. |
+| Seating completeness report | Assigned seats, TBC or unassigned seats, missing seat order and table fill levels. Useful for table-plan checks before the event. |
+| Party and group report | Linked guest group size and partial-arrival status. Useful where nominators, finalists, guests and plus-ones should be reviewed together. |
+
+## 13. Security Requirements
 
 - Supabase Row Level Security remains enabled.
 - Only authenticated active staff can read event data.
@@ -135,7 +154,7 @@ Tablet Check-In Mode does not display `award_result` or `award_result_notes`.
 - Private award outcomes must not appear in tablet check-in views.
 - Feedback email sends must be logged.
 
-## 13. Deployment Requirements
+## 14. Deployment Requirements
 
 Required Vercel variables:
 
@@ -159,7 +178,7 @@ Development command:
 npm run dev
 ```
 
-## 14. Acceptance Criteria
+## 15. Acceptance Criteria
 
 - The app title displays as TCVA Live Check-In.
 - Tablet mode is labelled Check-In.
@@ -171,3 +190,4 @@ npm run dev
 - Feedback email settings can be saved and attachment links added.
 - Email sends fail safely if provider settings are missing.
 - Admins can create staff users from Operations.
+- The Exports tab displays the current CSV suite and useful report directory with explanatory cards and CSV downloads.
